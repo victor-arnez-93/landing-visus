@@ -44,6 +44,21 @@
     });
   });
 
+  document.addEventListener("click", (event) => {
+    if (!mobileNav.classList.contains("open")) return;
+    if (mobileNav.contains(event.target) || menuToggle.contains(event.target)) return;
+    mobileNav.classList.remove("open");
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.textContent = "☰";
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth <= 1120) return;
+    mobileNav.classList.remove("open");
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.textContent = "☰";
+  }, { passive: true });
+
   function updateHeader() {
     header.classList.toggle("scrolled", window.scrollY > 20);
   }
