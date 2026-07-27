@@ -1,6 +1,10 @@
 (() => {
   "use strict";
 
+  /* =========================================================
+     REFERÊNCIAS PRINCIPAIS
+     ========================================================= */
+
   const root = document.documentElement;
   const header = document.querySelector(".site-header");
   const themeToggle = document.querySelector(".theme-toggle");
@@ -9,84 +13,247 @@
   const menuToggle = document.querySelector(".menu-toggle");
   const mobileNav = document.querySelector(".mobile-nav");
   const toast = document.querySelector(".toast");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const year = document.getElementById("year");
+
+  const reducedMotion = window
+    .matchMedia("(prefers-reduced-motion: reduce)")
+    .matches;
+
+  /*
+   * Deve ser igual ao breakpoint usado no CSS.
+   */
+  const MOBILE_BREAKPOINT = 900;
+
+  /* =========================================================
+     TEMA
+     ========================================================= */
 
   function applyTheme(theme) {
     const light = theme === "light";
+
     root.dataset.theme = theme;
-    themeToggle.setAttribute("aria-pressed", String(light));
-    themeIcon.textContent = light ? "☾" : "☼";
-    themeLabel.textContent = light ? "Tema escuro" : "Tema claro";
-    document.querySelector('meta[name="theme-color"]').setAttribute("content", light ? "#f8f6f1" : "#070707");
+
+    if (themeToggle) {
+      themeToggle.setAttribute("aria-pressed", String(light));
+    }
+
+    if (themeIcon) {
+      themeIcon.textContent = light ? "☾" : "☼";
+    }
+
+    if (themeLabel) {
+      themeLabel.textContent = light
+        ? "Tema escuro"
+        : "Tema claro";
+    }
+
+    const themeColor = document.querySelector(
+      'meta[name="theme-color"]'
+    );
+
+    if (themeColor) {
+      themeColor.setAttribute(
+        "content",
+        light ? "#f8f6f1" : "#070707"
+      );
+    }
   }
 
-  const storedTheme = localStorage.getItem("visus-landing-theme");
-  const preferredTheme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  const storedTheme = localStorage.getItem(
+    "visus-landing-theme"
+  );
+
+  const preferredTheme = window
+    .matchMedia("(prefers-color-scheme: light)")
+    .matches
+      ? "light"
+      : "dark";
+
   applyTheme(storedTheme || preferredTheme);
 
-  themeToggle.addEventListener("click", () => {
-    const next = root.dataset.theme === "dark" ? "light" : "dark";
-    applyTheme(next);
-    localStorage.setItem("visus-landing-theme", next);
-  });
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const nextTheme =
+        root.dataset.theme === "dark"
+          ? "light"
+          : "dark";
 
-  menuToggle.addEventListener("click", () => {
-    const open = mobileNav.classList.toggle("open");
-    menuToggle.setAttribute("aria-expanded", String(open));
-    menuToggle.textContent = open ? "×" : "☰";
-  });
+      applyTheme(nextTheme);
 
-  mobileNav.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", () => {
-      mobileNav.classList.remove("open");
-      menuToggle.setAttribute("aria-expanded", "false");
-      menuToggle.textContent = "☰";
+      localStorage.setItem(
+        "visus-landing-theme",
+        nextTheme
+      );
     });
-  });
+  }
 
-  document.addEventListener("click", (event) => {
-    if (!mobileNav.classList.contains("open")) return;
-    if (mobileNav.contains(event.target) || menuToggle.contains(event.target)) return;
-    mobileNav.classList.remove("open");
-    menuToggle.setAttribute("aria-expanded", "false");
-    menuToggle.textContent = "☰";
-  });
+  /* =========================================================
+     MENU RESPONSIVO
+     ========================================================= */
 
-  window.addEventListener("resize", () => {
-    if (window.innerWidth <= 1120) return;
-    mobileNav.classList.remove("open");
-    menuToggle.setAttribute("aria-expanded", "false");
-    menuToggle.textContent = "☰";
-  }, { passive: true });
+  function setMenuState(open) {
+    if (!menuToggle || !mobileNav) {
+      return;
+    }
+
+    mobileNav.classList.toggle("open", open);
+
+    menuToggle.setAttribute(
+      "aria-expanded",
+      String(open)
+    );
+
+    menuToggle.setAttribute(
+      "aria-label",
+      open ? "Fechar menu" : "Abrir menu"
+    );
+
+    menuToggle.textContent = open ? "×" : "☰";
+  }
+
+  if (menuToggle && mobileNav) {
+    menuToggle.addEventListener("click", () => {
+      const open = !mobileNav.classList.contains("open");
+      setMenuState(open);
+    });
+
+    mobileNav
+      .querySelectorAll("a")
+      .forEach((link) => {
+        link.addEventListener("click", () => {
+          setMenuState(false);
+        });
+      });
+
+    document.addEventListener("click", (event) => {
+      if (!mobileNav.classList.contains("open")) {
+        return;
+      }
+
+      if (
+        mobileNav.contains(event.target)
+        || menuToggle.contains(event.target)
+      ) {
+        return;
+      }
+
+      setMenuState(false);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape"
+        && mobileNav.classList.contains("open")
+      ) {
+        setMenuState(false);
+        menuToggle.focus();
+      }
+    });
+
+    window.addEventListener(
+      "resize",
+      () => {
+        if (window.innerWidth > MOBILE_BREAKPOINT) {
+          setMenuState(false);
+        }
+      },
+      { passive: true }
+    );
+  }
+
+  /* =========================================================
+     CABEÇALHO AO ROLAR
+     ========================================================= */
 
   function updateHeader() {
-    header.classList.toggle("scrolled", window.scrollY > 20);
+    if (!header) {
+      return;
+    }
+
+    header.classList.toggle(
+      "scrolled",
+      window.scrollY > 20
+    );
   }
+
   updateHeader();
-  window.addEventListener("scroll", updateHeader, { passive: true });
+
+  window.addEventListener(
+    "scroll",
+    updateHeader,
+    { passive: true }
+  );
+
+  /* =========================================================
+     AVISO DE DOWNLOAD
+     ========================================================= */
 
   let toastTimer;
-  document.querySelectorAll("[data-coming-soon]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      toast.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
-    });
-  });
 
-  document.getElementById("year").textContent = new Date().getFullYear();
+  document
+    .querySelectorAll("[data-coming-soon]")
+    .forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        if (!toast) {
+          return;
+        }
+
+        toast.classList.add("show");
+
+        clearTimeout(toastTimer);
+
+        toastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+        }, 2800);
+      });
+    });
+
+  /* =========================================================
+     ANO DO RODAPÉ
+     ========================================================= */
+
+  if (year) {
+    year.textContent = new Date().getFullYear();
+  }
+
+  /* =========================================================
+     ANIMAÇÕES
+     ========================================================= */
 
   function initMotion() {
-    if (reducedMotion || typeof window.gsap === "undefined") return;
+    /*
+     * Sem animação, todos os elementos permanecem visíveis.
+     */
+    if (
+      reducedMotion
+      || typeof window.gsap === "undefined"
+    ) {
+      return;
+    }
 
-    gsap.from(".site-header .brand, .desktop-nav a, .header-actions > *", {
-      opacity: 0,
-      y: -14,
-      duration: .7,
-      stagger: .06,
-      ease: "power2.out"
-    });
+    /*
+     * Correção importante:
+     *
+     * O cabeçalho inteiro é animado como um único bloco.
+     * Os links do menu não recebem mais opacity individual,
+     * evitando que somente parte deles fique invisível.
+     */
+    gsap.fromTo(
+      ".site-header .header-inner",
+      {
+        opacity: 0,
+        y: -14
+      },
+      {
+        opacity: 1,
+        y: 0,
+        duration: .7,
+        ease: "power2.out",
+        clearProps: "opacity,transform"
+      }
+    );
 
     gsap.from(".hero-copy > *", {
       opacity: 0,
@@ -105,23 +272,58 @@
       ease: "power3.out"
     });
 
-    if (typeof window.ScrollMagic === "undefined") {
-      gsap.set(".reveal", { opacity: 1, y: 0 });
+    if (
+      typeof window.ScrollMagic === "undefined"
+    ) {
+      gsap.set(".reveal", {
+        opacity: 1,
+        y: 0
+      });
+
       return;
     }
 
-    const controller = new ScrollMagic.Controller();
-    document.querySelectorAll(".reveal:not(.hero-copy):not(.hero-visual)").forEach((element) => {
-      gsap.set(element, { opacity: 0, y: 34 });
-      new ScrollMagic.Scene({
-        triggerElement: element,
-        triggerHook: .88,
-        reverse: false
-      })
-        .setTween(gsap.to(element, { opacity: 1, y: 0, duration: .75, ease: "power2.out" }))
-        .addTo(controller);
-    });
+    const controller =
+      new ScrollMagic.Controller();
+
+    document
+      .querySelectorAll(
+        ".reveal:not(.hero-copy):not(.hero-visual)"
+      )
+      .forEach((element) => {
+        gsap.set(element, {
+          opacity: 0,
+          y: 34
+        });
+
+        new ScrollMagic.Scene({
+          triggerElement: element,
+          triggerHook: .88,
+          reverse: false
+        })
+          .setTween(
+            gsap.to(element, {
+              opacity: 1,
+              y: 0,
+              duration: .75,
+              ease: "power2.out"
+            })
+          )
+          .addTo(controller);
+      });
   }
 
-  window.addEventListener("load", initMotion, { once: true });
+  /*
+   * Funciona tanto no carregamento normal quanto quando o
+   * arquivo é executado depois de a página já ter carregado.
+   */
+  if (document.readyState === "complete") {
+    initMotion();
+  } else {
+    window.addEventListener(
+      "load",
+      initMotion,
+      { once: true }
+    );
+  }
 })();

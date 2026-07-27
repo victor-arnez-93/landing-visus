@@ -104,7 +104,10 @@ img {
   inset: 0 0 auto;
   z-index: 100;
   border-bottom: 1px solid transparent;
-  transition: .25s ease;
+  transition:
+    background .25s ease,
+    border-color .25s ease,
+    backdrop-filter .25s ease;
 }
 
 .site-header.scrolled {
@@ -114,15 +117,21 @@ img {
   -webkit-backdrop-filter: blur(18px);
 }
 
+/*
+ * O cabeçalho usa três blocos independentes:
+ * marca, navegação e ações.
+ *
+ * A navegação não recebe largura fixa nem overflow oculto.
+ */
 .header-inner {
   min-height: 82px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   flex-wrap: nowrap;
 }
 
+/* Marca VISUS */
 .brand {
   display: inline-flex;
   align-items: center;
@@ -166,15 +175,31 @@ img {
   letter-spacing: .09em;
 }
 
+/*
+ * Menu desktop.
+ *
+ * As propriedades com !important impedem que uma animação interrompida
+ * deixe somente parte dos links com opacity: 0 ou transform aplicado.
+ */
 .desktop-nav {
-  min-width: 0;
+  min-width: max-content;
+  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: clamp(18px, 2vw, 30px);
-  margin-left: auto;
+  flex: 0 1 auto;
+  overflow: visible;
   white-space: nowrap;
-  flex: 1 1 auto;
+}
+
+.desktop-nav a {
+  display: inline-flex !important;
+  align-items: center;
+  flex: 0 0 auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
 }
 
 .desktop-nav a,
@@ -182,7 +207,9 @@ img {
   color: var(--muted);
   font-size: 14px;
   font-weight: 600;
-  transition: .2s ease;
+  transition:
+    color .2s ease,
+    background .2s ease;
 }
 
 .desktop-nav a:hover,
@@ -190,6 +217,7 @@ img {
   color: var(--gold);
 }
 
+/* Ações do cabeçalho */
 .header-actions {
   display: flex;
   align-items: center;
@@ -221,33 +249,21 @@ img {
   font-weight: 700;
 }
 
+/* Botão do menu móvel */
 .menu-toggle {
-  position: relative;
   display: none;
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
   padding: 0;
+  place-items: center;
+  color: var(--gold);
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--surface);
-  cursor: pointer;
-}
-
-.menu-toggle::before {
-  content: "☰";
-  color: var(--gold);
-  font-size: 20px;
+  font-size: 21px;
   line-height: 1;
-}
-
-.menu-toggle[aria-expanded="true"]::before {
-  content: "×";
-  font-size: 25px;
-}
-
-.menu-toggle > * {
-  display: none;
+  cursor: pointer;
 }
 
 .mobile-nav {
@@ -1051,9 +1067,8 @@ footer {
   }
 
   /*
-   * Correção principal:
-   * o conteúdo continua limitado a 760px, mas o cabeçalho usa
-   * praticamente toda a largura disponível para não encurtar o menu.
+   * O conteúdo interno continua compacto,
+   * mas o cabeçalho usa a largura disponível.
    */
   .site-header .header-inner {
     width: calc(100% - 34px);
@@ -1065,25 +1080,25 @@ footer {
   }
 
   .desktop-nav {
-    display: flex;
-    gap: clamp(10px, 1.35vw, 18px);
+    gap: clamp(11px, 1.5vw, 18px);
   }
 
   .desktop-nav a {
     font-size: 12px;
   }
 
-  .theme-toggle {
-    min-width: 42px;
-  }
-
+  /*
+   * Esconde somente o texto do tema.
+   * O botão continua disponível pelo ícone.
+   */
   .theme-label {
     display: none;
   }
 
-  .menu-toggle,
-  .mobile-nav {
-    display: none;
+  .theme-toggle {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
   }
 
   .hero {
@@ -1104,8 +1119,8 @@ footer {
 
   .hero-copy {
     max-width: 700px;
-    text-align: center;
     margin: auto;
+    text-align: center;
   }
 
   .hero-copy .eyebrow,
@@ -1189,21 +1204,23 @@ footer {
 }
 
 /* =========================================================
-   RESPONSIVO — MENU MOBILE
+   RESPONSIVO — TROCA REAL PARA MENU MÓVEL
    ========================================================= */
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .site-header .header-inner {
     width: calc(100% - 28px);
   }
 
+  /*
+   * Somente nesta largura o menu desktop desaparece.
+   */
   .desktop-nav {
     display: none;
   }
 
   .menu-toggle {
     display: grid;
-    place-items: center;
   }
 
   .mobile-nav {
@@ -1224,7 +1241,10 @@ footer {
     border: 1px solid var(--line);
     border-radius: 16px;
     box-shadow: var(--shadow);
-    transition: opacity .2s ease, visibility .2s ease, transform .2s ease;
+    transition:
+      opacity .2s ease,
+      visibility .2s ease,
+      transform .2s ease;
   }
 
   .mobile-nav.open {
