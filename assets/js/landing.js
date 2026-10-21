@@ -1,329 +1,137 @@
 (() => {
   "use strict";
-
-  /* =========================================================
-     REFERÊNCIAS PRINCIPAIS
-     ========================================================= */
-
   const root = document.documentElement;
   const header = document.querySelector(".site-header");
   const themeToggle = document.querySelector(".theme-toggle");
-  const themeIcon = document.querySelector(".theme-icon");
   const themeLabel = document.querySelector(".theme-label");
   const menuToggle = document.querySelector(".menu-toggle");
   const mobileNav = document.querySelector(".mobile-nav");
-  const toast = document.querySelector(".toast");
   const year = document.getElementById("year");
+  const backToTop = document.querySelector(".back-to-top");
+  const reduceQuery = matchMedia("(prefers-reduced-motion: reduce)");
+  const lowMotion = () => reduceQuery.matches;
 
-  const reducedMotion = window
-    .matchMedia("(prefers-reduced-motion: reduce)")
-    .matches;
-
-  /*
-   * Deve ser igual ao breakpoint usado no CSS.
-   */
-  const MOBILE_BREAKPOINT = 900;
-
-  /* =========================================================
-     TEMA
-     ========================================================= */
-
-  function applyTheme(theme) {
+  function themeSet(theme) {
     const light = theme === "light";
-
-    root.dataset.theme = theme;
-
+    root.dataset.theme = light ? "light" : "dark";
     if (themeToggle) {
       themeToggle.setAttribute("aria-pressed", String(light));
+      themeToggle.setAttribute("aria-label", light ? "Ativar tema escuro" : "Ativar tema claro");
+      themeToggle.title = light ? "Ativar tema escuro" : "Ativar tema claro";
     }
-
-    if (themeIcon) {
-      themeIcon.textContent = light ? "☾" : "☼";
-    }
-
-    if (themeLabel) {
-      themeLabel.textContent = light
-        ? "Tema escuro"
-        : "Tema claro";
-    }
-
-    const themeColor = document.querySelector(
-      'meta[name="theme-color"]'
-    );
-
-    if (themeColor) {
-      themeColor.setAttribute(
-        "content",
-        light ? "#f8f6f1" : "#070707"
-      );
-    }
+    if (themeLabel) themeLabel.textContent = light ? "Tema escuro" : "Tema claro";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = light ? "#f8f6f1" : "#070707";
   }
 
-  const storedTheme = localStorage.getItem(
-    "visus-landing-theme"
-  );
+  let stored = null;
+  try { stored = localStorage.getItem("visus-landing-theme"); } catch (_) {}
+  themeSet(stored === "light" || stored === "dark" ? stored : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+  themeToggle?.addEventListener("click", () => {
+    const next = root.dataset.theme === "light" ? "dark" : "light";
+    themeSet(next);
+    try { localStorage.setItem("visus-landing-theme", next); } catch (_) {}
+  });
 
-  const preferredTheme = window
-    .matchMedia("(prefers-color-scheme: light)")
-    .matches
-      ? "light"
-      : "dark";
-
-  applyTheme(storedTheme || preferredTheme);
-
-  if (themeToggle) {
-    themeToggle.addEventListener("click", () => {
-      const nextTheme =
-        root.dataset.theme === "dark"
-          ? "light"
-          : "dark";
-
-      applyTheme(nextTheme);
-
-      localStorage.setItem(
-        "visus-landing-theme",
-        nextTheme
-      );
-    });
-  }
-
-  /* =========================================================
-     MENU RESPONSIVO
-     ========================================================= */
-
-  function setMenuState(open) {
-    if (!menuToggle || !mobileNav) {
-      return;
-    }
-
+  const menuOpen = (open) => {
+    if (!menuToggle || !mobileNav) return;
     mobileNav.classList.toggle("open", open);
+    menuToggle.setAttribute("aria-expanded", String(open));
+    menuToggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    // Do not replace SVG children here: the same click event bubbles to document.
+    menuToggle.querySelector("svg path")?.setAttribute("d", open ? "M5 5 19 19M19 5 5 19" : "M4 7h16M4 12h16M4 17h16");
+  };
+  menuToggle?.addEventListener("click", () => menuOpen(!mobileNav.classList.contains("open")));
+  mobileNav?.querySelectorAll("a").forEach(a => a.addEventListener("click", () => menuOpen(false)));
+  document.addEventListener("click", e => {
+    if (mobileNav?.classList.contains("open") && !mobileNav.contains(e.target) && !menuToggle.contains(e.target)) menuOpen(false);
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && mobileNav?.classList.contains("open")) { menuOpen(false); menuToggle.focus(); }
+  });
+  window.addEventListener("resize", () => { if (innerWidth > 900) menuOpen(false); }, { passive: true });
 
-    menuToggle.setAttribute(
-      "aria-expanded",
-      String(open)
-    );
+  const handleScroll = () => {
+    const down = scrollY > 28;
+    header?.classList.toggle("scrolled", down);
+    backToTop?.classList.toggle("visible", scrollY > 540);
+  };
+  handleScroll();
+  addEventListener("scroll", handleScroll, { passive: true });
+  if (year) year.textContent = new Date().getFullYear();
 
-    menuToggle.setAttribute(
-      "aria-label",
-      open ? "Fechar menu" : "Abrir menu"
-    );
-
-    menuToggle.textContent = open ? "×" : "☰";
-  }
-
-  if (menuToggle && mobileNav) {
-    menuToggle.addEventListener("click", () => {
-      const open = !mobileNav.classList.contains("open");
-      setMenuState(open);
-    });
-
-    mobileNav
-      .querySelectorAll("a")
-      .forEach((link) => {
-        link.addEventListener("click", () => {
-          setMenuState(false);
-        });
+  // Three native screenshot slides, automatic and manual navigation.
+  const carousel = document.querySelector(".player-carousel");
+  if (carousel) {
+    const track = carousel.querySelector(".carousel-track");
+    const slides = [...carousel.querySelectorAll(".player-slide")];
+    const dots = [...carousel.querySelectorAll("[data-carousel-to]")];
+    const current = document.getElementById("player-current");
+    const length = slides.length;
+    let index = 0, timer = null, pointerStart = null;
+    let userPaused = false;
+    const setIndex = (next) => {
+      index = (next + length) % length;
+      track.style.transform = `translate3d(-${index * 100}%, 0, 0)`;
+      if (current) current.textContent = String(index + 1).padStart(2, "0");
+      slides.forEach((slide, n) => {
+        slide.setAttribute("aria-hidden", String(n !== index));
+        slide.inert = n !== index;
       });
-
-    document.addEventListener("click", (event) => {
-      if (!mobileNav.classList.contains("open")) {
-        return;
-      }
-
-      if (
-        mobileNav.contains(event.target)
-        || menuToggle.contains(event.target)
-      ) {
-        return;
-      }
-
-      setMenuState(false);
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (
-        event.key === "Escape"
-        && mobileNav.classList.contains("open")
-      ) {
-        setMenuState(false);
-        menuToggle.focus();
-      }
-    });
-
-    window.addEventListener(
-      "resize",
-      () => {
-        if (window.innerWidth > MOBILE_BREAKPOINT) {
-          setMenuState(false);
-        }
-      },
-      { passive: true }
-    );
-  }
-
-  /* =========================================================
-     CABEÇALHO AO ROLAR
-     ========================================================= */
-
-  function updateHeader() {
-    if (!header) {
-      return;
-    }
-
-    header.classList.toggle(
-      "scrolled",
-      window.scrollY > 20
-    );
-  }
-
-  updateHeader();
-
-  window.addEventListener(
-    "scroll",
-    updateHeader,
-    { passive: true }
-  );
-
-  /* =========================================================
-     AVISO DE DOWNLOAD
-     ========================================================= */
-
-  let toastTimer;
-
-  document
-    .querySelectorAll("[data-coming-soon]")
-    .forEach((link) => {
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-
-        if (!toast) {
-          return;
-        }
-
-        toast.classList.add("show");
-
-        clearTimeout(toastTimer);
-
-        toastTimer = setTimeout(() => {
-          toast.classList.remove("show");
-        }, 2800);
+      dots.forEach((dot, n) => {
+        dot.classList.toggle("active", index === n);
+        if (index === n) dot.setAttribute("aria-current", "true");
+        else dot.removeAttribute("aria-current");
       });
+    };
+    const stop = () => { if (timer) clearInterval(timer); timer = null; };
+    const start = () => {
+      stop();
+      if (lowMotion() || userPaused || document.hidden) return;
+      timer = setInterval(() => setIndex(index + 1), 5800);
+    };
+    const manual = (next) => { setIndex(next); start(); };
+    carousel.querySelector("[data-carousel-prev]")?.addEventListener("click", () => manual(index - 1));
+    carousel.querySelector("[data-carousel-next]")?.addEventListener("click", () => manual(index + 1));
+    dots.forEach(dot => dot.addEventListener("click", () => manual(Number(dot.dataset.carouselTo))));
+    carousel.addEventListener("mouseenter", () => { userPaused = true; stop(); });
+    carousel.addEventListener("mouseleave", () => { userPaused = false; start(); });
+    carousel.addEventListener("focusin", () => { userPaused = true; stop(); });
+    carousel.addEventListener("focusout", e => { if (!carousel.contains(e.relatedTarget)) { userPaused = false; start(); } });
+    carousel.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight") { e.preventDefault(); manual(index + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); manual(index - 1); }
     });
-
-  /* =========================================================
-     ANO DO RODAPÉ
-     ========================================================= */
-
-  if (year) {
-    year.textContent = new Date().getFullYear();
+    carousel.querySelector(".carousel-viewport")?.addEventListener("pointerdown", e => { if (e.pointerType === "touch") pointerStart = e.clientX; });
+    carousel.querySelector(".carousel-viewport")?.addEventListener("pointerup", e => {
+      if (pointerStart === null || e.pointerType !== "touch") return;
+      const distance = e.clientX - pointerStart;
+      pointerStart = null;
+      if (Math.abs(distance) > 50) manual(index + (distance < 0 ? 1 : -1));
+    });
+    document.addEventListener("visibilitychange", start);
+    reduceQuery.addEventListener?.("change", start);
+    setIndex(0);
+    start();
   }
 
-  /* =========================================================
-     ANIMAÇÕES
-     ========================================================= */
-
+  // Resilient scroll reveals, with GSAP ScrollTrigger when available.
   function initMotion() {
-    /*
-     * Sem animação, todos os elementos permanecem visíveis.
-     */
-    if (
-      reducedMotion
-      || typeof window.gsap === "undefined"
-    ) {
-      return;
+    if (lowMotion()) return;
+    const gsap = window.gsap;
+    if (!gsap) return;
+    if (window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
+    gsap.from(".site-header .header-inner", { y: -12, opacity: 0, duration: .65, ease: "power2.out", clearProps: "all" });
+    if (document.querySelector(".hero-copy")) {
+      gsap.from(".hero-copy > *", { y: 20, opacity: 0, duration: .8, stagger: .09, delay: .13, ease: "power2.out", clearProps: "all" });
+      gsap.from(".hero-visual", { x: 24, opacity: 0, duration: .9, delay: .25, ease: "power2.out", clearProps: "all" });
     }
-
-    /*
-     * Correção importante:
-     *
-     * O cabeçalho inteiro é animado como um único bloco.
-     * Os links do menu não recebem mais opacity individual,
-     * evitando que somente parte deles fique invisível.
-     */
-    gsap.fromTo(
-      ".site-header .header-inner",
-      {
-        opacity: 0,
-        y: -14
-      },
-      {
-        opacity: 1,
-        y: 0,
-        duration: .7,
-        ease: "power2.out",
-        clearProps: "opacity,transform"
-      }
-    );
-
-    gsap.from(".hero-copy > *", {
-      opacity: 0,
-      y: 28,
-      duration: .85,
-      stagger: .1,
-      delay: .15,
-      ease: "power3.out"
+    if (!window.ScrollTrigger) return;
+    document.querySelectorAll(".reveal:not(.hero-copy):not(.hero-visual)").forEach((el) => {
+      gsap.from(el, { y: 24, opacity: 0, duration: .68, ease: "power2.out", clearProps: "all", scrollTrigger: { trigger: el, start: "top 94%", once: true } });
     });
-
-    gsap.from(".hero-visual", {
-      opacity: 0,
-      x: 55,
-      duration: 1,
-      delay: .35,
-      ease: "power3.out"
-    });
-
-    if (
-      typeof window.ScrollMagic === "undefined"
-    ) {
-      gsap.set(".reveal", {
-        opacity: 1,
-        y: 0
-      });
-
-      return;
-    }
-
-    const controller =
-      new ScrollMagic.Controller();
-
-    document
-      .querySelectorAll(
-        ".reveal:not(.hero-copy):not(.hero-visual)"
-      )
-      .forEach((element) => {
-        gsap.set(element, {
-          opacity: 0,
-          y: 34
-        });
-
-        new ScrollMagic.Scene({
-          triggerElement: element,
-          triggerHook: .88,
-          reverse: false
-        })
-          .setTween(
-            gsap.to(element, {
-              opacity: 1,
-              y: 0,
-              duration: .75,
-              ease: "power2.out"
-            })
-          )
-          .addTo(controller);
-      });
   }
-
-  /*
-   * Funciona tanto no carregamento normal quanto quando o
-   * arquivo é executado depois de a página já ter carregado.
-   */
-  if (document.readyState === "complete") {
-    initMotion();
-  } else {
-    window.addEventListener(
-      "load",
-      initMotion,
-      { once: true }
-    );
-  }
+  // Wait for defer scripts in document order, but never hide content if a CDN fails.
+  if (document.readyState === "complete") initMotion();
+  else addEventListener("load", initMotion, { once: true });
 })();
