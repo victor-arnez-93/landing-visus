@@ -10,16 +10,17 @@
   const backToTop = document.querySelector(".back-to-top");
   const reduceQuery = matchMedia("(prefers-reduced-motion: reduce)");
   const lowMotion = () => reduceQuery.matches;
+  const t = (text) => window.VISUS_I18N?.t(text) || text;
 
   function themeSet(theme) {
     const light = theme === "light";
     root.dataset.theme = light ? "light" : "dark";
     if (themeToggle) {
       themeToggle.setAttribute("aria-pressed", String(light));
-      themeToggle.setAttribute("aria-label", light ? "Ativar tema escuro" : "Ativar tema claro");
-      themeToggle.title = light ? "Ativar tema escuro" : "Ativar tema claro";
+      themeToggle.setAttribute("aria-label", t(light ? "Ativar tema escuro" : "Ativar tema claro"));
+      themeToggle.title = t(light ? "Ativar tema escuro" : "Ativar tema claro");
     }
-    if (themeLabel) themeLabel.textContent = light ? "Tema escuro" : "Tema claro";
+    if (themeLabel) themeLabel.textContent = t(light ? "Tema escuro" : "Tema claro");
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = light ? "#f8f6f1" : "#070707";
   }
@@ -27,6 +28,7 @@
   let stored = null;
   try { stored = localStorage.getItem("visus-landing-theme"); } catch (_) {}
   themeSet(stored === "light" || stored === "dark" ? stored : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+  document.addEventListener("visus:language-changed", () => { themeSet(root.dataset.theme); });
   themeToggle?.addEventListener("click", () => {
     const next = root.dataset.theme === "light" ? "dark" : "light";
     themeSet(next);
@@ -37,7 +39,7 @@
     if (!menuToggle || !mobileNav) return;
     mobileNav.classList.toggle("open", open);
     menuToggle.setAttribute("aria-expanded", String(open));
-    menuToggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+    menuToggle.setAttribute("aria-label", t(open ? "Fechar menu" : "Abrir menu"));
     // Do not replace SVG children here: the same click event bubbles to document.
     menuToggle.querySelector("svg path")?.setAttribute("d", open ? "M5 5 19 19M19 5 5 19" : "M4 7h16M4 12h16M4 17h16");
   };
