@@ -58,9 +58,33 @@
     header?.classList.toggle("scrolled", down);
     backToTop?.classList.toggle("visible", scrollY > 540);
   };
-  handleScroll();
-  addEventListener("scroll", handleScroll, { passive: true });
-  if (year) year.textContent = new Date().getFullYear();
+
+handleScroll();
+
+addEventListener("scroll", handleScroll, {
+  passive: true
+});
+
+// VISUS — Voltar ao topo
+backToTop?.addEventListener("click", (event) => {
+  event.preventDefault();
+
+  const behavior = lowMotion() ? "auto" : "smooth";
+
+  // Página de Termos, que possui rolagem interna
+  document.querySelector(".terms-document")?.scrollTo({
+    top: 0,
+    behavior
+  });
+
+  // Retornar ao início da página
+  window.scrollTo({
+    top: 0,
+    behavior
+  });
+});
+
+if (year) year.textContent = new Date().getFullYear();
 
   // Three native screenshot slides, automatic and manual navigation.
   const carousel = document.querySelector(".player-carousel");

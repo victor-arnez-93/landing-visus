@@ -80,7 +80,10 @@
     const ogLocale = document.querySelector('meta[property="og:locale"]');
     if (ogLocale) ogLocale.content = ({"pt-BR":"pt_BR","en":"en_US","es":"es_ES","fr":"fr_FR","de":"de_DE","it":"it_IT","zh-CN":"zh_CN","ja":"ja_JP"})[lang];
     const selected = languages.find(item => item.code === lang) || languages[0];
-    if (flag) flag.textContent = selected.flag;
+    if (flag) {
+      flag.textContent = selected.flag;
+      flag.dataset.country = selected.code;
+    }
     if (code) code.textContent = selected.short;
     for (const option of entries) {
       const active = option.dataset.language === lang;
