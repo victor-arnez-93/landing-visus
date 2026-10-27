@@ -2064,8 +2064,10 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
   line-height: 1.6;
 }
 
+
 /* =========================================================
    VISUS — BANDEIRAS REDONDAS (8 IDIOMAS)
+   Imagens locais, sem dependências externas.
    ========================================================= */
 
 .language-flag,
@@ -2077,15 +2079,17 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
   border-radius: 50%;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: contain;
   border: 1px solid rgba(212, 168, 67, 0.45);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  font-size: 0;
+  font-size: 0 !important;
   line-height: 0;
   overflow: hidden;
   vertical-align: middle;
   flex-shrink: 0;
 }
+
+/* Bandeira exibida no botão principal */
 
 .language-current-flag {
   width: 21px;
@@ -2093,45 +2097,62 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
   min-width: 21px;
 }
 
+/* Brasil */
+
 .language-option[data-language="pt-BR"] .language-flag,
-.language-current-flag[data-country="pt-BR"] {
-  background-image: url("https://flagcdn.com/w80/br.png");
+html[lang="pt-BR"] .language-current-flag {
+  background-image: url("../img/flags/flag-br.png");
 }
+
+/* Estados Unidos */
 
 .language-option[data-language="en"] .language-flag,
-.language-current-flag[data-country="en"] {
-  background-image: url("https://flagcdn.com/w80/us.png");
+html[lang="en"] .language-current-flag {
+  background-image: url("../img/flags/flag-us.png");
 }
+
+/* Espanha */
 
 .language-option[data-language="es"] .language-flag,
-.language-current-flag[data-country="es"] {
-  background-image: url("https://flagcdn.com/w80/es.png");
+html[lang="es"] .language-current-flag {
+  background-image: url("../img/flags/flag-es.png");
 }
+
+/* França */
 
 .language-option[data-language="fr"] .language-flag,
-.language-current-flag[data-country="fr"] {
-  background-image: url("https://flagcdn.com/w80/fr.png");
+html[lang="fr"] .language-current-flag {
+  background-image: url("../img/flags/flag-fr.png");
 }
+
+/* Alemanha */
 
 .language-option[data-language="de"] .language-flag,
-.language-current-flag[data-country="de"] {
-  background-image: url("https://flagcdn.com/w80/de.png");
+html[lang="de"] .language-current-flag {
+  background-image: url("../img/flags/flag-de.png");
 }
+
+/* Itália */
 
 .language-option[data-language="it"] .language-flag,
-.language-current-flag[data-country="it"] {
-  background-image: url("https://flagcdn.com/w80/it.png");
+html[lang="it"] .language-current-flag {
+  background-image: url("../img/flags/flag-it.png");
 }
+
+/* China */
 
 .language-option[data-language="zh-CN"] .language-flag,
-.language-current-flag[data-country="zh-CN"] {
-  background-image: url("https://flagcdn.com/w80/cn.png");
+html[lang="zh-CN"] .language-current-flag {
+  background-image: url("../img/flags/flag-cn.png");
 }
 
+/* Japão */
+
 .language-option[data-language="ja"] .language-flag,
-.language-current-flag[data-country="ja"] {
-  background-image: url("https://flagcdn.com/w80/jp.png");
+html[lang="ja"] .language-current-flag {
+  background-image: url("../img/flags/flag-jp.png");
 }
+
 
 /* =========================================================
    VISUS — RESPONSIVIDADE
